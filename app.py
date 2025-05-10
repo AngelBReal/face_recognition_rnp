@@ -146,9 +146,17 @@ def detect_faces():
         print(f"Error en procesamiento de frame: {e}")
         return jsonify({'identities': [f'error: {str(e)}']}), 500
 
+# Importante: Cambio en la forma de ejecutar para Render
 if __name__ == '__main__':
     # Obtener puerto desde variables de entorno (para Render)
     port = int(os.environ.get('PORT', 10000))
     
     # Ejecutar el servidor en modo producción
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
+else:
+    # Esta sección es para gunicorn
+    # Cargamos los modelos anticipadamente
+    try:
+        load_models()
+    except Exception as e:
+        print(f"Error pre-cargando modelos: {e}")
