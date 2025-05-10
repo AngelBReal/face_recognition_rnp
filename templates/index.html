@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Reconocimiento Facial - Proyecto MCD</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <!-- Header con logo y título -->
+    <header>
+        <img src="/static/logo.png" alt="Logo Escuela" id="logo">
+        <h1>Proyecto de Reconocimiento Facial</h1>
+        <p>Maestría en Ciencias de Datos - MCD</p>
+    </header>
+
+    <!-- Botón para cambiar cámara -->
+    <div id="controls">
+        <button id="switchCamera">Cambiar Cámara</button>
+        <a href="https://github.com/TU_USUARIO/TU_REPO" target="_blank" id="githubLink">
+            🔗 Ver en GitHub
+        </a>
+    </div>
+
+    <!-- Video en vivo -->
+    <video id="video" autoplay playsinline></video>
+
+    <!-- Canvas oculto -->
+    <canvas id="canvas" style="display:none;"></canvas>
+
+    <!-- Texto de salida -->
+    <div id="output">Detectados: esperando...</div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
+    <script src="/static/script.js"></script>
+
+    <footer>
+        <p>&copy; 2025 Proyecto de Reconocimiento Facial - MCD</p>
+        <p>
+            <a href="https://github.com/TuUsuario/TuRepo" target="_blank">
+                <img src="/static/github.png" alt="GitHub" class="icon">
+            </a>
+            <a href="https://www.linkedin.com/in/TuUsuario/" target="_blank">
+                <img src="/static/linkedin.png" alt="LinkedIn" class="icon">
+            </a>
+            <a href="https://www.mi-escuela.mx" target="_blank">
+                <img src="/static/unison.png" alt="UNISON" class="icon">
+            </a>
+        </p>
+    </footer>
+</body>
+</html>
