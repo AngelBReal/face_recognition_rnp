@@ -1,0 +1,41 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Flask / Python environment
+*.env
+*.venv
+venv/
+ENV/
+env/
+.venv/
+.env/
+
+# Jupyter Notebook checkpoints (por si pruebas notebooks)
+.ipynb_checkpoints
+
+# Face embeddings / modelos pesados
+*.pkl
+*.npz
+*.h5
+*.tflite
+
+# Videos o imágenes capturados
+*.jpg
+*.jpeg
+*.png
+*.mp4
+*.avi
+
+# Logs
+*.log
+
+# System files (macOS, Windows, Linux)
+.DS_Store
+Thumbs.db
+
+# IDE / editor configs
+.vscode/
+.idea/
+*.swp
