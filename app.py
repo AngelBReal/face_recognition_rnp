@@ -7,7 +7,7 @@ import pickle
 from keras_facenet import FaceNet
 import mediapipe as mp
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='static', static_url_path='/static')
 socketio = SocketIO(app)
 
 # Load FaceNet + embeddings
@@ -66,5 +66,6 @@ def handle_frame(data):
     emit('response', {'identities': identities})
 
 if __name__ == '__main__':
-    print("==== Running app ====")
-    socketio.run(app, host='0.0.0.0', port=5000, debug=True)
+    import eventlet
+    eventlet.monkey_patch()
+    socketio.run(app)
