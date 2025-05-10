@@ -33,11 +33,12 @@ Funciona en computadoras y teléfonos móviles, permite cambiar entre cámaras y
 
 # 1️⃣ Clona el proyecto
 git clone https://github.com/TuUsuario/TuRepo.git
-cd TuRepo
 
 # 2️⃣ Crea entorno virtual
 python -m venv venv
-source venv/bin/activate  # En Windows: venv\Scripts\activate
+source venv/bin/activate  
+
+### En Windows: venv\Scripts\activate
 
 # 3️⃣ Instala dependencias
 pip install -r requirements.txt
@@ -54,22 +55,14 @@ http://localhost:5000
 ### 🌐 Demo en línea
 
 🚀 [Ver app desplegada en Render](https://tusitio.render.com)
-*(Agrega aquí tu link cuando lo subas a Render)*
-
----
-
-### 📸 Ejemplo visual
-
-![screenshot](static/screenshot.png)
-*(Agrega un screenshot de tu interfaz funcionando y guárdalo en la carpeta `/static` con este nombre.)*
 
 ---
 
 ### 🙌 Créditos
 
-* Universidad: [Mi Escuela](https://www.mi-escuela.mx)
-* Autor: [Tu Nombre](https://www.linkedin.com/in/TuUsuario/)
-* GitHub: [@TuUsuario](https://github.com/TuUsuario)
+* Universidad: [Mi Escuela](https://mcd.unison.mx/)
+* Autor: [Tu Nombre](https://www.linkedin.com/in/angelbarrazareal/)
+* GitHub: [@TuUsuario](https://github.com/AngelBReal)
 
 ---
 
@@ -77,22 +70,7 @@ http://localhost:5000
 
 Este proyecto es de uso académico. Puedes adaptarlo, mejorar su diseño y usarlo como base para tus propios proyectos.
 
-```
 
----
-
-### 📌 Instrucciones para personalizarlo
-
-✅ Reemplaza:
-- `TuUsuario` → tu usuario GitHub  
-- `TuRepo` → el nombre de tu repositorio  
-- `https://www.linkedin.com/in/TuUsuario/` → tu perfil de LinkedIn  
-- `https://www.mi-escuela.mx` → sitio web de tu escuela
-
-✅ Guarda una captura de pantalla como:
-
-
-/static/screenshot.png
 
 
 
