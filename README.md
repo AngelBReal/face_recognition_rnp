@@ -29,24 +29,30 @@ Funciona en computadoras y teléfonos móviles, permite cambiar entre cámaras y
 
 ---
 
+### 📓 Notebook de embeddings
+
+📄 [Ver el notebook en Google Colab](https://colab.research.google.com/drive/15EgZHAOr41qktQks3yr85aWkLnKJfq3Z#scrollTo=dD1rYHCZ9p7D)
+
+---
+
 ### 📦 Cómo correr localmente
 
-# 1️⃣ Clona el proyecto
+#### 1️⃣ Clona el proyecto
 git clone https://github.com/TuUsuario/TuRepo.git
 
-# 2️⃣ Crea entorno virtual
+#### 2️⃣ Crea entorno virtual
 python -m venv venv
 source venv/bin/activate  
 
 ### En Windows: venv\Scripts\activate
 
-# 3️⃣ Instala dependencias
+#### 3️⃣ Instala dependencias
 pip install -r requirements.txt
 
-# 4️⃣ Corre la app
+#### 4️⃣ Corre la app
 python app.py
 
-# 5️⃣ Abre en navegador
+#### 5️⃣ Abre en navegador
 http://localhost:5000
 
 
