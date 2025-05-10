@@ -27,7 +27,6 @@ env/
 # Videos o imágenes capturados
 *.jpg
 *.jpeg
-*.png
 *.mp4
 *.avi
 
