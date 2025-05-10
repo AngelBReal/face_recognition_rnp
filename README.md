@@ -38,22 +38,49 @@ Funciona en computadoras y teléfonos móviles, permite cambiar entre cámaras y
 ### 📦 Cómo correr localmente
 
 #### 1️⃣ Clona el proyecto
-git clone https://github.com/TuUsuario/TuRepo.git
+
+```bash
+git clone https://github.com/TuUsuario/TuRepo.gi¨
+```
 
 #### 2️⃣ Crea entorno virtual
+``` bash
 python -m venv venv
 source venv/bin/activate  
+```
 
 ### En Windows: venv\Scripts\activate
 
 #### 3️⃣ Instala dependencias
+``` bash
 pip install -r requirements.txt
+```
 
 #### 4️⃣ Corre la app
+``` bash
 python app.py
+```
 
 #### 5️⃣ Abre en navegador
 http://localhost:5000
+
+---
+
+### 📂 Archivos incluidos
+
+✅ **Código principal**
+
+* `app.py`: Código completo de la aplicación, con comentarios explicativos de cada sección.
+* `embeddings.pkl`: Archivo generado con el notebook con embeddings para el reconocimiento.
+* `requirements.txt`: Lista de dependencias necesarias.
+* `notebook_embeddings.ipynb`: Colab Notebook usado para crear los embeddings.
+
+✅ **Archivo HTML**
+
+* `templates/index.html`: Archivo que sirve como interfaz web para la aplicación.
+  Permite capturar video en vivo, detectar rostros, mostrar nombres detectados y cambiar de cámara.
+
+---
 
 
 ---
