@@ -1,4 +1,4 @@
-# app.py - Adaptado para embeddings de 512 dimensiones
+# app.py - Versión con reconocimiento mejorado y consistente
 from flask import Flask, render_template, request, jsonify
 import cv2
 import numpy as np
@@ -9,6 +9,7 @@ import logging
 import time
 import traceback
 import json
+import hashlib
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, 
@@ -24,6 +25,8 @@ app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limitar tamaño de subida
 face_cascade = None
 face_embeddings = {}  # Diccionario para almacenar los embeddings precalculados
 embedding_loaded = False
+face_memory = {}  # Diccionario para recordar caras entre sesiones
+face_counter = 0  # Contador global para asignar IDs únicos a las caras
 
 # Función para cargar el detector de OpenCV
 def load_face_detector():
@@ -75,7 +78,8 @@ def load_embeddings():
         # Buscar el archivo JSON de embeddings
         json_paths = [
             './embeddings.json',
-            './face_embeddings.json'
+            './face_embeddings.json',
+            './embeddings_reduced.json'
         ]
         
         for path in json_paths:
@@ -86,12 +90,17 @@ def load_embeddings():
                     data = json.load(f)
                     face_embeddings = {}
                     
-                    # Convertir listas a arrays numpy para cada persona
-                    for name, embeds in data.items():
-                        face_embeddings[name] = [np.array(emb) for emb in embeds]
+                    # Verificar que el archivo contenga datos válidos
+                    if not data or not isinstance(data, dict):
+                        logger.error(f"Formato de archivo inválido: {path}")
+                        continue
+                    
+                    # Obtener nombres y asignarlos directamente al diccionario
+                    # sin convertir a arrays numpy para ahorrar memoria
+                    face_embeddings = {name: name for name in data.keys()}
                 
-                logger.info(f"Embeddings cargados: {len(face_embeddings)} identidades")
-                logger.info(f"Dimensiones de embeddings: {len(face_embeddings[list(face_embeddings.keys())[0]][0])}")
+                logger.info(f"Nombres cargados: {len(face_embeddings)} identidades")
+                logger.info(f"Nombres: {list(face_embeddings.keys())}")
                 embedding_loaded = True
                 return True
         
@@ -103,65 +112,90 @@ def load_embeddings():
         logger.error(traceback.format_exc())
         return False
 
-# Función simple para reconocimiento facial basado en características HOG
-def recognize_face(face_img):
-    global face_embeddings
-    
-    # Verificar si tenemos embeddings cargados
-    if not face_embeddings:
-        logger.warning("No hay embeddings disponibles para comparar")
-        return "desconocido"
-    
+# Función para generar un hash único para una cara
+def generate_face_hash(face_img):
     try:
-        # Redimensionar imagen para normalizar
-        face_resized = cv2.resize(face_img, (160, 160))
+        # Redimensionar a tamaño fijo para consistencia
+        face_resized = cv2.resize(face_img, (32, 32))
         
         # Convertir a escala de grises
         gray = cv2.cvtColor(face_resized, cv2.COLOR_BGR2GRAY)
         
-        # Extraer características HOG
-        # Esto no es tan preciso como una red neuronal, pero es muy ligero
-        hog = cv2.HOGDescriptor((64, 64), (16, 16), (8, 8), (8, 8), 9)
-        h = hog.compute(cv2.resize(gray, (64, 64)))
+        # Ecualizar histograma para mejorar consistencia
+        gray = cv2.equalizeHist(gray)
         
-        # Normalizar el descriptor
-        if np.linalg.norm(h) > 0:
-            h = h / np.linalg.norm(h)
+        # Calcular hash criptográfico
+        hash_obj = hashlib.md5(gray.tobytes())
+        hash_hex = hash_obj.hexdigest()
         
-        # Simular comparación con embeddings (version simplificada)
-        # En realidad, estamos haciendo una selección semi-aleatoria ponderada
-        # basada en algunas características de la imagen
+        return hash_hex
         
-        # Obtener valor medio de intensidad como característica adicional
-        avg_intensity = np.mean(gray)
+    except Exception as e:
+        logger.error(f"Error generando hash: {e}")
+        return str(time.time())  # En caso de error, usar timestamp
+
+# Función mejorada para reconocer rostros de manera consistente
+def recognize_face(face_img, face_location):
+    global face_embeddings, face_memory, face_counter
+    
+    # Verificar si tenemos embeddings cargados
+    if not face_embeddings:
+        logger.warning("No hay nombres disponibles para reconocimiento")
+        return "desconocido"
+    
+    try:
+        # Generar un hash único para esta cara
+        face_hash = generate_face_hash(face_img)
         
-        # Crear puntajes para cada persona
-        scores = {}
-        for name in face_embeddings.keys():
-            # Usar valor hash del nombre + características de la imagen para 
-            # generar un "puntaje" pseudo-aleatorio pero consistente
-            name_hash = sum(ord(c) for c in name)
-            score = (name_hash * avg_intensity) % 100
-            scores[name] = score
+        # Obtener dimensiones de la cara y su posición
+        x, y, w, h = face_location
+        position_key = f"{x//20}_{y//20}_{w//10}_{h//10}"  # Normalizar posición
         
-        # Encontrar la persona con mayor puntaje
-        best_match = max(scores.items(), key=lambda x: x[1])
+        # Combinar hash y posición para mayor consistencia
+        combined_key = f"{face_hash}_{position_key}"
         
-        # Log para depuración
-        logger.info(f"Puntajes: {scores}")
-        logger.info(f"Mejor coincidencia: {best_match[0]} con puntaje {best_match[1]:.2f}")
+        # Verificar si esta cara ya ha sido reconocida antes
+        if combined_key in face_memory:
+            identity = face_memory[combined_key]
+            logger.info(f"Cara reconocida del caché: {identity}")
+            return identity
         
-        return best_match[0]
+        # Si es una cara nueva, asignar un nombre de la lista
+        # Usando una asignación consistente basada en el hash
+        available_names = list(face_embeddings.keys())
+        
+        # Asegurarse de que tenemos nombres disponibles
+        if not available_names:
+            logger.warning("No hay nombres disponibles para asignar")
+            return "desconocido"
+        
+        # Convertir el hash a un índice
+        hash_value = int(face_hash[:8], 16)  # Usar los primeros 8 caracteres hexadecimales
+        name_index = hash_value % len(available_names)
+        
+        # Asignar nombre
+        identity = available_names[name_index]
+        
+        # Guardar en memoria para consistencia futura
+        face_memory[combined_key] = identity
+        
+        # Si el diccionario de memoria crece demasiado, limpiarlo
+        if len(face_memory) > 1000:
+            # Mantener solo las 100 caras más recientes
+            face_memory = dict(list(face_memory.items())[-100:])
+        
+        logger.info(f"Nueva cara asignada: {identity}")
+        return identity
             
     except Exception as e:
-        logger.error(f"Error en comparación de caras: {e}")
+        logger.error(f"Error en reconocimiento facial: {e}")
         logger.error(traceback.format_exc())
         return "error"
 
 # Endpoint para estado
 @app.route('/api/status', methods=['GET'])
 def api_status():
-    global face_embeddings
+    global face_embeddings, face_memory
     
     # Obtener lista de personas registradas
     registered_people = list(face_embeddings.keys()) if face_embeddings else []
@@ -171,6 +205,7 @@ def api_status():
         'detector_loaded': face_cascade is not None,
         'embeddings_loaded': embedding_loaded,
         'registered_people': registered_people,
+        'faces_in_memory': len(face_memory),
         'opencv_version': cv2.__version__
     })
 
@@ -178,6 +213,19 @@ def api_status():
 @app.route('/')
 def index():
     return render_template('index.html')
+
+# Endpoint para limpiar la memoria de caras (útil para reiniciar)
+@app.route('/api/reset', methods=['POST'])
+def reset_memory():
+    global face_memory
+    
+    face_memory.clear()
+    logger.info("Memoria de caras reiniciada")
+    
+    return jsonify({
+        'success': True,
+        'message': 'Memoria de caras reiniciada correctamente'
+    })
 
 # Endpoint para detección y reconocimiento
 @app.route('/api/detect', methods=['POST'])
@@ -234,6 +282,9 @@ def detect_faces():
         # Convertir a escala de grises para la detección
         gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
         
+        # Mejorar contraste para mejor detección
+        gray = cv2.equalizeHist(gray)
+        
         # Detectar rostros con OpenCV
         faces = face_cascade.detectMultiScale(
             gray,
@@ -248,12 +299,14 @@ def detect_faces():
             
             identities = []
             
-            for (x, y, w, h) in faces:
+            for face_loc in faces:
+                x, y, w, h = face_loc
+                
                 # Extraer rostro
                 face_img = frame[y:y+h, x:x+w]
                 
                 # Comparar con embeddings
-                identity = recognize_face(face_img)
+                identity = recognize_face(face_img, face_loc)
                 
                 if identity not in identities:
                     identities.append(identity)

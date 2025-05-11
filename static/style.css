@@ -1,3 +1,4 @@
+/* Estilos generales */
 body {
     text-align: center;
     background-color: #121212;
@@ -5,16 +6,14 @@ body {
     font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
     padding: 0;
+    line-height: 1.6;
 }
 
+/* Header */
 header {
     background-color: #1e1e1e;
     padding: 20px;
-}
-
-#logo {
-    height: 80px;
-    margin-bottom: 10px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
 }
 
 h1 {
@@ -28,63 +27,207 @@ p {
     color: #ccc;
 }
 
-#controls {
-    margin: 20px;
-}
-
-button {
-    margin: 10px;
-    padding: 10px 20px;
-    font-size: 16px;
+/* Banner informativo */
+.info-banner {
     background-color: #007acc;
     color: white;
+    padding: 10px;
+    border-radius: 5px;
+    margin: 15px auto;
+    font-weight: bold;
+    text-align: center;
+    max-width: 800px;
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.3);
+}
+
+/* Caja de información */
+.info-box {
+    margin: 20px auto;
+    text-align: left;
+    max-width: 800px;
+    padding: 20px;
+    background-color: #2a2a2a;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.info-box h3 {
+    margin-top: 0;
+    color: #007acc;
+}
+
+.info-box ul {
+    display: flex;
+    flex-wrap: wrap;
+    padding-left: 20px;
+    gap: 10px 30px;
+}
+
+.info-box li {
+    flex: 0 0 calc(33.33% - 30px);
+}
+
+@media (max-width: 768px) {
+    .info-box li {
+        flex: 0 0 calc(50% - 30px);
+    }
+}
+
+@media (max-width: 480px) {
+    .info-box li {
+        flex: 0 0 100%;
+    }
+}
+
+/* Controles */
+#controls {
+    display: flex;
+    justify-content: center;
+    flex-wrap: wrap;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+/* Botones */
+.btn, button {
+    padding: 10px 20px;
+    font-size: 16px;
     border: none;
     border-radius: 5px;
     cursor: pointer;
+    transition: background-color 0.2s, transform 0.1s;
 }
 
-button:hover {
-    background-color: #005fa3;
+.btn:hover, button:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 4px 8px rgba(0, 0, 0, 0.3);
 }
 
-#githubLink {
-    display: inline-block;
-    margin-left: 10px;
-    font-size: 16px;
-    color: #61dafb;
-    text-decoration: none;
+.btn:active, button:active {
+    transform: translateY(0);
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.3);
 }
 
-#githubLink:hover {
-    text-decoration: underline;
+.primary, button {
+    background-color: #007acc;
+    color: white;
 }
 
+.primary:hover, button:hover {
+    background-color: #0090e8;
+}
+
+.secondary {
+    background-color: #444;
+    color: white;
+}
+
+.secondary:hover {
+    background-color: #555;
+}
+
+#resetBtn {
+    background-color: #e67e22;
+    color: white;
+}
+
+#resetBtn:hover {
+    background-color: #f39c12;
+}
+
+/* Contenedor principal */
+.main-container {
+    max-width: 800px;
+    margin: 0 auto;
+    padding: 10px;
+}
+
+/* Video */
 video {
-    width: 80%;
-    margin-top: 20px;
+    width: 100%;
+    max-width: 640px;
     border: 3px solid #007acc;
-    border-radius: 10px;
+    border-radius: 8px;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.5);
+    background-color: #000;
+    margin: 0 auto;
+    display: block;
 }
 
+/* Salida de texto */
 #output {
-    margin-top: 20px;
+    margin: 20px auto;
     font-size: 24px;
     color: #00ff00;
+    background-color: rgba(0, 0, 0, 0.3);
+    padding: 15px;
+    border-radius: 8px;
+    max-width: 600px;
 }
 
+/* Sección de diagnóstico */
+.diagnostic-section {
+    margin: 20px auto;
+    max-width: 800px;
+}
+
+#diagOutput {
+    margin: 15px auto;
+    padding: 15px;
+    background-color: #333;
+    max-height: 200px;
+    overflow-y: auto;
+    display: none;
+    width: 90%;
+    max-width: 700px;
+    text-align: left;
+    border-radius: 8px;
+    border: 1px solid #555;
+}
+
+/* Footer */
 footer {
     background-color: #1e1e1e;
-    padding: 10px;
-    margin-top: 30px;
-    font-size: 14px;
+    padding: 20px;
+    margin-top: 40px;
+    border-top: 1px solid #333;
 }
 
 footer p {
-    margin: 5px;
+    margin: 10px 0;
 }
 
 footer .icon {
     width: 32px;
-    margin: 0 5px;
+    margin: 0 10px;
     vertical-align: middle;
+    transition: transform 0.2s;
+}
+
+footer .icon:hover {
+    transform: scale(1.2);
+}
+
+/* Mensajes de estado */
+.status-error {
+    color: #ff5555;
+}
+
+.status-warning {
+    color: #ffaa00;
+}
+
+.status-success {
+    color: #00ff00;
+}
+
+/* Animación de carga */
+@keyframes pulse {
+    0% { opacity: 1; }
+    50% { opacity: 0.5; }
+    100% { opacity: 1; }
+}
+
+.loading {
+    animation: pulse 1.5s infinite;
 }

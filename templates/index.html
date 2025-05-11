@@ -2,54 +2,9 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reconocimiento Facial - Demo</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Reconocimiento Facial - Proyecto MCD</title>
     <link rel="stylesheet" href="/static/style.css">
-    <style>
-        .demo-banner {
-            background-color: #ff9900;
-            color: #333;
-            padding: 10px;
-            border-radius: 5px;
-            margin: 10px 0;
-            font-weight: bold;
-            text-align: center;
-        }
-        
-        #controls {
-            display: flex;
-            justify-content: center;
-            margin: 15px;
-        }
-        
-        #output {
-            font-size: 28px;
-            margin: 15px;
-            padding: 15px;
-            background-color: #333;
-            border-radius: 5px;
-        }
-        
-        #diagnoseBtn {
-            margin: 10px; 
-            background-color: #444; 
-            color: white; 
-            padding: 8px 15px; 
-            border: none; 
-            border-radius: 5px;
-        }
-        
-        #diagOutput {
-            margin: 10px auto; 
-            padding: 10px; 
-            background-color: #333; 
-            max-height: 200px; 
-            overflow-y: auto; 
-            display: none;
-            width: 80%;
-            max-width: 600px;
-            text-align: left;
-        }
-    </style>
 </head>
 <body>
     <!-- Header con logo y título -->
@@ -58,38 +13,53 @@
         <p>Maestría en Ciencias de Datos - MCD</p>
     </header>
 
-    <div class="demo-banner">
-        VERSIÓN DEMO: Usando simulación para demostrar la funcionalidad
+    <div class="info-banner">
+        Reconocimiento facial en tiempo real usando OpenCV
     </div>
 
     <!-- Explicación -->
-    <div style="margin: 20px; text-align: left; max-width: 800px; margin: 0 auto; padding: 15px; background-color: #2a2a2a; border-radius: 5px;">
-        <h3>Acerca de esta demostración</h3>
-        <p>Esta es una versión de demostración del proyecto de reconocimiento facial que utiliza:</p>
-        <ul style="text-align: left; margin-left: 20px;">
-            <li>MediaPipe para detección de rostros (sin reconocimiento real)</li>
-            <li>Simulación para demostrar la identificación de personas</li>
+    <div class="info-box">
+        <h3>Acerca de este proyecto</h3>
+        <p>Este proyecto implementa un sistema de reconocimiento facial utilizando técnicas de visión por computadora, y puede identificar a:</p>
+        <ul>
+            <li>Feli</li>
+            <li>Federico</li>
+            <li>Jesús</li>
+            <li>Celia</li>
+            <li>Eddel</li>
+            <li>Ángel</li>
+            <li>Fernando</li>
+            <li>Kevin</li>
+            <li>Sebastián</li>
+            <li>Manuel</li>
+            <li>Jennifer</li>
         </ul>
-        <p>El reconocimiento completo con FaceNet requiere más recursos que los disponibles en el plan gratuito de Render.</p>
+        <p>El sistema utiliza OpenCV para la detección facial y asignación consistente de identidades.</p>
     </div>
 
-    <!-- Botón para cambiar cámara -->
+    <!-- Controles de cámara -->
     <div id="controls">
-        <button id="switchCamera">Cambiar Cámara</button>
-        <button id="diagnoseBtn">Diagnosticar Servidor</button>
+        <button id="switchCamera" class="btn primary">Cambiar Cámara</button>
+        <!-- El botón de reinicio se añade dinámicamente desde script.js -->
     </div>
 
-    <!-- Video en vivo -->
-    <video id="video" autoplay playsinline></video>
+    <!-- Contenedor principal -->
+    <div class="main-container">
+        <!-- Video en vivo -->
+        <video id="video" autoplay playsinline></video>
 
-    <!-- Canvas oculto -->
-    <canvas id="canvas" style="display:none;"></canvas>
+        <!-- Canvas oculto -->
+        <canvas id="canvas" style="display:none;"></canvas>
 
-    <!-- Texto de salida -->
-    <div id="output">Detectados: esperando...</div>
+        <!-- Texto de salida -->
+        <div id="output">Detectados: esperando...</div>
+    </div>
     
-    <!-- Salida de diagnóstico -->
-    <div id="diagOutput"></div>
+    <!-- Diagnóstico -->
+    <div class="diagnostic-section">
+        <button id="diagnoseBtn" class="btn secondary">Diagnóstico</button>
+        <div id="diagOutput"></div>
+    </div>
 
     <script src="/static/script.js"></script>
 

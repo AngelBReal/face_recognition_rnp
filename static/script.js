@@ -1,8 +1,25 @@
+// script.js mejorado con botón de reinicio
 const video = document.getElementById('video');
 const canvas = document.getElementById('canvas');
 const output = document.getElementById('output');
 const switchBtn = document.getElementById('switchCamera');
 const context = canvas.getContext('2d');
+
+// Agregar botón de reinicio
+const resetBtn = document.createElement('button');
+resetBtn.id = 'resetBtn';
+resetBtn.textContent = 'Reiniciar Reconocimiento';
+resetBtn.style.backgroundColor = '#aa5500';
+resetBtn.style.margin = '10px';
+resetBtn.style.padding = '10px 20px';
+resetBtn.style.color = 'white';
+resetBtn.style.border = 'none';
+resetBtn.style.borderRadius = '5px';
+resetBtn.style.cursor = 'pointer';
+
+// Insertar botón de reinicio junto al botón de cambiar cámara
+const controlsDiv = document.getElementById('controls');
+controlsDiv.appendChild(resetBtn);
 
 let facingMode = 'user'; // o 'environment'
 let isProcessing = false;
@@ -51,6 +68,34 @@ switchBtn.addEventListener('click', () => {
     startCamera();
 });
 
+// Botón para reiniciar reconocimiento
+resetBtn.addEventListener('click', async () => {
+    try {
+        resetBtn.disabled = true;
+        resetBtn.textContent = 'Reiniciando...';
+        
+        // Llamar al endpoint de reinicio
+        const response = await fetch('/api/reset', {
+            method: 'POST'
+        });
+        
+        if (response.ok) {
+            output.innerText = 'Reconocimiento reiniciado. Esperando detección...';
+            output.style.color = '#00ff00';
+        } else {
+            output.innerText = 'Error al reiniciar reconocimiento';
+            output.style.color = '#ff0000';
+        }
+    } catch (err) {
+        console.error('Error al reiniciar:', err);
+        output.innerText = 'Error al reiniciar reconocimiento';
+        output.style.color = '#ff0000';
+    } finally {
+        resetBtn.disabled = false;
+        resetBtn.textContent = 'Reiniciar Reconocimiento';
+    }
+});
+
 // Iniciar procesamiento
 function startProcessing() {
     if (intervalId) {
@@ -62,7 +107,7 @@ function startProcessing() {
         if (!isProcessing && video.readyState === 4 && serverAvailable) {
             processFrame();
         }
-    }, 1000);
+    }, 1000);  // 1 segundo entre frames para reducir carga
 }
 
 // Detener procesamiento
@@ -87,7 +132,10 @@ async function processFrame() {
         const dataURL = canvas.toDataURL('image/jpeg', 0.5);
         
         // Mostrar indicador de procesamiento
-        output.innerText = 'Procesando...';
+        const currentText = output.innerText;
+        if (!currentText.includes('Procesando')) {
+            output.innerText = 'Procesando...';
+        }
         
         // Enviar al servidor usando fetch
         const response = await fetch('/api/detect', {
@@ -144,18 +192,23 @@ async function processFrame() {
 // Función para verificar la disponibilidad del servidor
 async function checkServer() {
     try {
-        const response = await fetch('/', { 
+        const response = await fetch('/api/status', { 
             method: 'GET',
-            // Añadir una consulta aleatoria para evitar la caché
             cache: 'no-store' 
         });
         
         if (response.ok) {
+            const data = await response.json();
             serverAvailable = true;
+            
+            // Actualizar información de estado si es necesario
             if (output.innerText.includes('Error de conexión')) {
                 output.innerText = 'Conectado: esperando detección...';
                 output.style.color = '#00ff00';
             }
+            
+            // Mostrar información de debug en consola
+            console.log('Estado del servidor:', data);
         }
     } catch (err) {
         serverAvailable = false;
