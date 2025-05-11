@@ -1,3 +1,4 @@
+# app.py - Versión minimalista con solo OpenCV
 from flask import Flask, render_template, request, jsonify
 import cv2
 import numpy as np
@@ -7,7 +8,6 @@ import gc
 import logging
 import time
 import traceback
-import psutil
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO, 
@@ -20,103 +20,100 @@ app.config['SECRET_KEY'] = 'reconocimiento_facial_mcd_2025'
 app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limitar tamaño de subida a 16MB
 
 # Variables globales
-face_detection = None
+face_cascade = None
 
-# Estado interno para simulación
-SIMULATED_FACES = {
-    "USUARIO1": "Juan Pérez",
-    "USUARIO2": "María García",
-    "USUARIO3": "Carlos Rodríguez"
-}
-current_user_index = 0
+# Nombres simulados para la demostración
+DEMO_NAMES = ["Juan Pérez", "María García", "Carlos Rodríguez", "Ana Martínez"]
+current_name_index = 0
 
-# Endpoint para diagnóstico y estado
-@app.route('/api/status', methods=['GET'])
-def api_status():
-    # Verificar memoria disponible
-    memory = psutil.virtual_memory()
-    
-    # Verificar si los modelos están cargados
-    return jsonify({
-        'status': 'ok',
-        'memory': {
-            'total': memory.total,
-            'available': memory.available,
-            'percent': memory.percent
-        },
-        'models_loaded': face_detection is not None,
-        'mediapipe_only': True,  # Indicar que estamos en modo ligero
-        'opencv_version': cv2.__version__
-    })
-
-# Función para cargar solo el detector de MediaPipe (ligero)
+# Función para cargar el detector de OpenCV
 def load_face_detector():
-    global face_detection
+    global face_cascade
     
     try:
-        logger.info("Iniciando carga de MediaPipe Face Detection...")
-        start_time = time.time()
+        logger.info("Cargando detector de caras OpenCV...")
         
-        # Cargar MediaPipe - mucho más ligero que FaceNet
-        import mediapipe as mp
-        mp_face_detection = mp.solutions.face_detection
-        face_detection = mp_face_detection.FaceDetection(
-            min_detection_confidence=0.5,
-            model_selection=0  # 0=modelo ligero para caras cercanas
-        )
+        # Usar el detector de caras Haar Cascade de OpenCV (muy ligero)
+        # Este archivo debería estar en tu carpeta del proyecto
+        cascade_path = cv2.data.haarcascades + 'haarcascade_frontalface_default.xml'
         
-        # Calcular tiempo total
-        elapsed_time = time.time() - start_time
-        logger.info(f"MediaPipe cargado. Tiempo: {elapsed_time:.2f} segundos")
+        if not os.path.exists(cascade_path):
+            logger.error(f"Archivo cascade no encontrado en: {cascade_path}")
+            # Intentar buscar en otras ubicaciones
+            alternative_paths = [
+                './haarcascade_frontalface_default.xml',
+                '/haarcascade_frontalface_default.xml',
+                '/app/haarcascade_frontalface_default.xml'
+            ]
+            
+            for path in alternative_paths:
+                if os.path.exists(path):
+                    cascade_path = path
+                    logger.info(f"Archivo cascade encontrado en ubicación alternativa: {path}")
+                    break
         
-        # Forzar recolección de basura para liberar memoria
-        gc.collect()
+        face_cascade = cv2.CascadeClassifier(cascade_path)
         
+        # Verificar que se haya cargado correctamente
+        if face_cascade.empty():
+            logger.error("Error: No se pudo cargar el clasificador Haar Cascade")
+            return False
+            
+        logger.info("Detector de caras OpenCV cargado correctamente")
         return True
+        
     except Exception as e:
         logger.error(f"Error cargando detector: {str(e)}")
         logger.error(traceback.format_exc())
         return False
 
-# Función para simular reconocimiento
+# Simulación simple de reconocimiento para la demostración
 def simulate_recognition():
-    global current_user_index
+    global current_name_index
     
-    # Simular diferentes usuarios en secuencia
-    users = list(SIMULATED_FACES.values())
-    result = users[current_user_index % len(users)]
+    # Rotar entre los nombres simulados
+    name = DEMO_NAMES[current_name_index % len(DEMO_NAMES)]
+    current_name_index += 1
     
-    # Avanzar al siguiente usuario para la próxima llamada
-    current_user_index += 1
-    
-    return result
+    return name
+
+# Endpoint para estado
+@app.route('/api/status', methods=['GET'])
+def api_status():
+    return jsonify({
+        'status': 'ok',
+        'detector_loaded': face_cascade is not None,
+        'detector_type': 'OpenCV Haar Cascade (minimal)',
+        'opencv_version': cv2.__version__
+    })
 
 # Ruta principal
 @app.route('/')
 def index():
     return render_template('index.html')
 
-# Endpoint simple sin ML
+# Endpoint para detección simulada (sin ML)
 @app.route('/api/detect-mock', methods=['POST'])
 def detect_faces_mock():
     try:
-        # Simulamos detección
+        # Simulamos detección sin procesar la imagen
         identity = simulate_recognition()
         return jsonify({'identities': [identity]})
     except Exception as e:
         logger.error(f"Error en endpoint mock: {e}")
         return jsonify({'identities': [f'error: {str(e)}']}), 500
 
-# Endpoint para detección (sin reconocimiento)
+# Endpoint para detección básica con OpenCV
 @app.route('/api/detect', methods=['POST'])
 def detect_faces():
-    global face_detection
+    global face_cascade
     
     # Cargar detector si aún no está cargado
-    if face_detection is None:
+    if face_cascade is None:
         logger.info("Primera llamada a /api/detect, cargando detector...")
         success = load_face_detector()
         if not success:
+            logger.error("No se pudo cargar el detector de caras")
             return jsonify({
                 'error': 'Error cargando detector',
                 'identities': ['error de carga']
@@ -151,21 +148,32 @@ def detect_faces():
         
         # Redimensionar para ahorrar memoria
         frame = cv2.resize(frame, (160, 120))
-        rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # Detectar rostros con MediaPipe
-        results = face_detection.process(rgb_frame)
+        # Convertir a escala de grises para la detección
+        gray = cv2.cvtColor(frame, cv2.COLOR_BGR2GRAY)
+        
+        # Detectar rostros con OpenCV
+        faces = face_cascade.detectMultiScale(
+            gray,
+            scaleFactor=1.1,
+            minNeighbors=5,
+            minSize=(30, 30)
+        )
 
         # Si se detectan rostros, simulamos reconocimiento
-        if results.detections and len(results.detections) > 0:
-            logger.info(f"Detectados {len(results.detections)} rostros")
+        if len(faces) > 0:
+            logger.info(f"Detectados {len(faces)} rostros")
             
             # Simulamos reconocimiento (para demostración)
             identity = simulate_recognition()
             
             # Liberar memoria
-            del frame, rgb_frame, results
+            del frame, gray
             gc.collect()
+            
+            # Tiempo total
+            total_time = time.time() - start_time
+            logger.info(f"Procesamiento completo. Tiempo: {total_time:.2f}s")
             
             return jsonify({'identities': [identity]})
         else:
@@ -173,8 +181,12 @@ def detect_faces():
             logger.info("No se detectaron rostros")
             
             # Liberar memoria
-            del frame, rgb_frame, results
+            del frame, gray
             gc.collect()
+            
+            # Tiempo total
+            total_time = time.time() - start_time
+            logger.info(f"No se detectaron rostros. Tiempo: {total_time:.2f}s")
             
             return jsonify({'identities': ["sin rostro"]})
             
@@ -188,7 +200,7 @@ if __name__ == '__main__':
     # Obtener puerto desde variables de entorno (para Render)
     port = int(os.environ.get('PORT', 10000))
     
-    # Pre-cargar el detector (opcional)
+    # Pre-cargar el detector
     load_face_detector()
     
     # Ejecutar el servidor
