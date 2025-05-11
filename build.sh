@@ -1,6 +1,7 @@
 #!/bin/bash
 
-# Script para preparar la aplicación en entorno de Render
+# Auto-asignar permisos de ejecución
+chmod +x build.sh
 
 echo "Iniciando script de construcción..."
 
