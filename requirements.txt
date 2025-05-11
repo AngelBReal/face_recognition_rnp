@@ -52,6 +52,7 @@ optree==0.15.0
 packaging==25.0
 pillow==11.2.1
 protobuf==4.25.7
+psutil==7.0.0
 pycparser==2.22
 Pygments==2.19.1
 pyparsing==3.2.3
