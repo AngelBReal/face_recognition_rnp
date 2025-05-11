@@ -2,23 +2,81 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Reconocimiento Facial - Proyecto MCD</title>
+    <title>Reconocimiento Facial - Demo</title>
     <link rel="stylesheet" href="/static/style.css">
+    <style>
+        .demo-banner {
+            background-color: #ff9900;
+            color: #333;
+            padding: 10px;
+            border-radius: 5px;
+            margin: 10px 0;
+            font-weight: bold;
+            text-align: center;
+        }
+        
+        #controls {
+            display: flex;
+            justify-content: center;
+            margin: 15px;
+        }
+        
+        #output {
+            font-size: 28px;
+            margin: 15px;
+            padding: 15px;
+            background-color: #333;
+            border-radius: 5px;
+        }
+        
+        #diagnoseBtn {
+            margin: 10px; 
+            background-color: #444; 
+            color: white; 
+            padding: 8px 15px; 
+            border: none; 
+            border-radius: 5px;
+        }
+        
+        #diagOutput {
+            margin: 10px auto; 
+            padding: 10px; 
+            background-color: #333; 
+            max-height: 200px; 
+            overflow-y: auto; 
+            display: none;
+            width: 80%;
+            max-width: 600px;
+            text-align: left;
+        }
+    </style>
 </head>
 <body>
     <!-- Header con logo y título -->
     <header>
-        <img src="/static/logo.png" alt="Logo Escuela" id="logo">
         <h1>Proyecto de Reconocimiento Facial</h1>
         <p>Maestría en Ciencias de Datos - MCD</p>
     </header>
 
+    <div class="demo-banner">
+        VERSIÓN DEMO: Usando simulación para demostrar la funcionalidad
+    </div>
+
+    <!-- Explicación -->
+    <div style="margin: 20px; text-align: left; max-width: 800px; margin: 0 auto; padding: 15px; background-color: #2a2a2a; border-radius: 5px;">
+        <h3>Acerca de esta demostración</h3>
+        <p>Esta es una versión de demostración del proyecto de reconocimiento facial que utiliza:</p>
+        <ul style="text-align: left; margin-left: 20px;">
+            <li>MediaPipe para detección de rostros (sin reconocimiento real)</li>
+            <li>Simulación para demostrar la identificación de personas</li>
+        </ul>
+        <p>El reconocimiento completo con FaceNet requiere más recursos que los disponibles en el plan gratuito de Render.</p>
+    </div>
+
     <!-- Botón para cambiar cámara -->
     <div id="controls">
         <button id="switchCamera">Cambiar Cámara</button>
-        <a href="https://github.com/TU_USUARIO/TU_REPO" target="_blank" id="githubLink">
-            🔗 Ver en GitHub
-        </a>
+        <button id="diagnoseBtn">Diagnosticar Servidor</button>
     </div>
 
     <!-- Video en vivo -->
@@ -29,8 +87,10 @@
 
     <!-- Texto de salida -->
     <div id="output">Detectados: esperando...</div>
+    
+    <!-- Salida de diagnóstico -->
+    <div id="diagOutput"></div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.4.1/socket.io.min.js"></script>
     <script src="/static/script.js"></script>
 
     <footer>

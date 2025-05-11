@@ -1,162 +1,195 @@
-# app.py - Versión REST optimizada para bajo consumo de memoria
 from flask import Flask, render_template, request, jsonify
 import cv2
 import numpy as np
 import base64
-import pickle
 import os
 import gc
+import logging
+import time
+import traceback
+import psutil
 
+# Configurar logging
+logging.basicConfig(level=logging.INFO, 
+                   format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
+logger = logging.getLogger(__name__)
+
+# Crear la aplicación Flask
 app = Flask(__name__, static_folder='static', static_url_path='/static')
 app.config['SECRET_KEY'] = 'reconocimiento_facial_mcd_2025'
+app.config['MAX_CONTENT_LENGTH'] = 16 * 1024 * 1024  # Limitar tamaño de subida a 16MB
 
-# Variables globales para los modelos
-embedder = None
-database = None
+# Variables globales
 face_detection = None
 
-def load_models():
-    global embedder, database, face_detection
+# Estado interno para simulación
+SIMULATED_FACES = {
+    "USUARIO1": "Juan Pérez",
+    "USUARIO2": "María García",
+    "USUARIO3": "Carlos Rodríguez"
+}
+current_user_index = 0
+
+# Endpoint para diagnóstico y estado
+@app.route('/api/status', methods=['GET'])
+def api_status():
+    # Verificar memoria disponible
+    memory = psutil.virtual_memory()
     
-    # Cargar modelos solo cuando sea necesario
+    # Verificar si los modelos están cargados
+    return jsonify({
+        'status': 'ok',
+        'memory': {
+            'total': memory.total,
+            'available': memory.available,
+            'percent': memory.percent
+        },
+        'models_loaded': face_detection is not None,
+        'mediapipe_only': True,  # Indicar que estamos en modo ligero
+        'opencv_version': cv2.__version__
+    })
+
+# Función para cargar solo el detector de MediaPipe (ligero)
+def load_face_detector():
+    global face_detection
+    
     try:
-        print("Cargando modelos...")
+        logger.info("Iniciando carga de MediaPipe Face Detection...")
+        start_time = time.time()
         
-        # Cargar MediaPipe primero porque es más ligero
+        # Cargar MediaPipe - mucho más ligero que FaceNet
         import mediapipe as mp
         mp_face_detection = mp.solutions.face_detection
-        face_detection = mp_face_detection.FaceDetection(min_detection_confidence=0.5)
+        face_detection = mp_face_detection.FaceDetection(
+            min_detection_confidence=0.5,
+            model_selection=0  # 0=modelo ligero para caras cercanas
+        )
         
-        # Cargar FaceNet (esto consume más memoria)
-        from keras_facenet import FaceNet
-        embedder = FaceNet()
+        # Calcular tiempo total
+        elapsed_time = time.time() - start_time
+        logger.info(f"MediaPipe cargado. Tiempo: {elapsed_time:.2f} segundos")
         
-        # Cargar base de datos de caras
-        with open('face_database.pkl', 'rb') as f:
-            database = pickle.load(f)
-            
-        print("Modelos cargados correctamente")
-        
-    except Exception as e:
-        print(f"Error cargando modelos: {e}")
-        raise
-
-def recognize_face(face_img):
-    global embedder, database
-    
-    # Verificar que tenemos una imagen válida
-    if face_img is None or face_img.size == 0:
-        return 'desconocido'
-    
-    try:
-        # Redimensionar para FaceNet
-        face_img = cv2.resize(face_img, (160, 160))
-        
-        # Obtener embedding
-        embedding = embedder.embeddings([face_img])[0]
-        
-        # Buscar la cara más cercana en la base de datos
-        min_dist = 100
-        identity = 'desconocido'
-        
-        for name, db_embeddings in database.items():
-            for db_emb in db_embeddings:
-                dist = np.linalg.norm(embedding - db_emb)
-                if dist < min_dist:
-                    min_dist = dist
-                    identity = name
-        
-        # Umbral de similitud
-        if min_dist > 0.7:
-            identity = 'desconocido'
-        
-        # Liberar memoria
+        # Forzar recolección de basura para liberar memoria
         gc.collect()
         
-        return identity
+        return True
     except Exception as e:
-        print(f"Error en reconocimiento facial: {e}")
-        return 'error'
+        logger.error(f"Error cargando detector: {str(e)}")
+        logger.error(traceback.format_exc())
+        return False
 
+# Función para simular reconocimiento
+def simulate_recognition():
+    global current_user_index
+    
+    # Simular diferentes usuarios en secuencia
+    users = list(SIMULATED_FACES.values())
+    result = users[current_user_index % len(users)]
+    
+    # Avanzar al siguiente usuario para la próxima llamada
+    current_user_index += 1
+    
+    return result
+
+# Ruta principal
 @app.route('/')
 def index():
     return render_template('index.html')
 
+# Endpoint simple sin ML
+@app.route('/api/detect-mock', methods=['POST'])
+def detect_faces_mock():
+    try:
+        # Simulamos detección
+        identity = simulate_recognition()
+        return jsonify({'identities': [identity]})
+    except Exception as e:
+        logger.error(f"Error en endpoint mock: {e}")
+        return jsonify({'identities': [f'error: {str(e)}']}), 500
+
+# Endpoint para detección (sin reconocimiento)
 @app.route('/api/detect', methods=['POST'])
 def detect_faces():
     global face_detection
     
-    # Cargar modelos si aún no están cargados
+    # Cargar detector si aún no está cargado
     if face_detection is None:
-        try:
-            load_models()
-        except Exception as e:
-            return jsonify({'identities': [f'Error cargando modelos: {str(e)}']}), 500
+        logger.info("Primera llamada a /api/detect, cargando detector...")
+        success = load_face_detector()
+        if not success:
+            return jsonify({
+                'error': 'Error cargando detector',
+                'identities': ['error de carga']
+            }), 500
     
     try:
-        # Obtener imagen desde el request
-        data = request.json.get('image', '')
+        # Iniciar tiempo
+        start_time = time.time()
         
+        # Obtener imagen desde el request
+        if not request.is_json:
+            logger.warning("Solicitud sin JSON")
+            return jsonify({'identities': ['error: solicitud no es JSON']}), 400
+        
+        data = request.json.get('image', '')
         if not data or ',' not in data:
+            logger.warning("Formato de imagen incorrecto")
             return jsonify({'identities': ['error formato']}), 400
-            
+        
         # Decodificar imagen
-        img_data = base64.b64decode(data.split(',')[1])
-        np_arr = np.frombuffer(img_data, np.uint8)
-        frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        try:
+            img_data = base64.b64decode(data.split(',')[1])
+            np_arr = np.frombuffer(img_data, np.uint8)
+            frame = cv2.imdecode(np_arr, cv2.IMREAD_COLOR)
+        except Exception as e:
+            logger.error(f"Error decodificando imagen: {e}")
+            return jsonify({'identities': ['error decodificando imagen']}), 400
         
         if frame is None:
+            logger.warning("Frame decodificado es None")
             return jsonify({'identities': ['error imagen']}), 400
         
         # Redimensionar para ahorrar memoria
         frame = cv2.resize(frame, (160, 120))
         rgb_frame = cv2.cvtColor(frame, cv2.COLOR_BGR2RGB)
         
-        # Detectar rostros
+        # Detectar rostros con MediaPipe
         results = face_detection.process(rgb_frame)
 
-        identities = []
-
-        if results.detections:
-            for detection in results.detections:
-                bbox = detection.location_data.relative_bounding_box
-                h, w, _ = frame.shape
-                x1, y1 = int(bbox.xmin * w), int(bbox.ymin * h)
-                x2, y2 = x1 + int(bbox.width * w), y1 + int(bbox.height * h)
-                
-                # Verificar coordenadas válidas
-                if x1 < 0 or y1 < 0 or x2 >= w or y2 >= h or x2 <= x1 or y2 <= y1:
-                    continue
-                    
-                # Extraer rostro y reconocer
-                face_img = rgb_frame[y1:y2, x1:x2]
-                identity = recognize_face(face_img)
-                if identity not in identities:
-                    identities.append(identity)
-
-        if not identities:
-            identities.append("sin rostro")
-
-        # Liberar memoria explícitamente
-        del frame, rgb_frame, results
-        gc.collect()
-
-        return jsonify({'identities': identities})
+        # Si se detectan rostros, simulamos reconocimiento
+        if results.detections and len(results.detections) > 0:
+            logger.info(f"Detectados {len(results.detections)} rostros")
+            
+            # Simulamos reconocimiento (para demostración)
+            identity = simulate_recognition()
+            
+            # Liberar memoria
+            del frame, rgb_frame, results
+            gc.collect()
+            
+            return jsonify({'identities': [identity]})
+        else:
+            # No se detectaron rostros
+            logger.info("No se detectaron rostros")
+            
+            # Liberar memoria
+            del frame, rgb_frame, results
+            gc.collect()
+            
+            return jsonify({'identities': ["sin rostro"]})
+            
     except Exception as e:
-        print(f"Error en procesamiento de frame: {e}")
+        logger.error(f"Error en procesamiento: {str(e)}")
+        logger.error(traceback.format_exc())
         return jsonify({'identities': [f'error: {str(e)}']}), 500
 
-# Importante: Cambio en la forma de ejecutar para Render
+# Punto de entrada para ejecución directa
 if __name__ == '__main__':
     # Obtener puerto desde variables de entorno (para Render)
     port = int(os.environ.get('PORT', 10000))
     
-    # Ejecutar el servidor en modo producción
+    # Pre-cargar el detector (opcional)
+    load_face_detector()
+    
+    # Ejecutar el servidor
     app.run(host='0.0.0.0', port=port, debug=False, threaded=True)
-else:
-    # Esta sección es para gunicorn
-    # Cargamos los modelos anticipadamente
-    try:
-        load_models()
-    except Exception as e:
-        print(f"Error pre-cargando modelos: {e}")
